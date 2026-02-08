@@ -54,9 +54,13 @@ export default function HomePage() {
   >(null);
   const achievementQueueRef = useRef<import("@/data/achievements").Achievement[]>([]);
 
-  // 첫 실행 시 기본 할일 시드
+  // 첫 실행 시 기본 할일 시드 (localStorage에 저장 기록 없을 때만)
   useEffect(() => {
     if (hydrated && todos.length === 0) {
+      // localStorage에 이미 저장된 적이 있으면 시드하지 않음
+      const saved = localStorage.getItem("ddak-hana-todos");
+      if (saved) return; // 이전에 저장된 적 있음 = 유저가 전부 삭제한 것
+
       const addTodo = useTodoStore.getState().addTodo;
       defaultTodos.forEach((todo) => addTodo(todo));
     }
