@@ -95,7 +95,15 @@ export default function HomePage() {
           {/* 헤더 */}
           <div className="flex justify-between items-center mb-6">
             <button
-              onClick={() => setTimerTodo(null)}
+              onClick={() => {
+                if (timerTodo) {
+                  if (confirm("타이머를 중단하고 돌아갈까요?")) {
+                    setTimerTodo(null);
+                  }
+                } else {
+                  setTimerTodo(null);
+                }
+              }}
               className="text-2xl font-bold text-lavender-500 hover:opacity-80 transition-opacity"
             >
               딱 하나 🎯

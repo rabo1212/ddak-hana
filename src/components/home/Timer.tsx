@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Todo } from "@/stores/useTodoStore";
+import { useTimerStore } from "@/stores/useTimerStore";
 import EncouragementMessage from "@/components/ui/EncouragementMessage";
 
 type TimerPhase = "select" | "running" | "paused" | "done";
@@ -70,6 +71,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const setTimerActive = useTimerStore((s) => s.setTimerActive);
 
   // 할일에 맞는 시간 옵션 생성
   const timeOptions = getTimeOptions(todo.estimatedMinutes);
@@ -188,6 +190,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
     intervalRef.current = setInterval(tick, 1000);
 
     // 집중 모드 활성화
+    setTimerActive(true);
     await requestWakeLock();
     await enterFullscreen();
   };
@@ -208,6 +211,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   // 포기
   const giveUp = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    setTimerActive(false);
     releaseWakeLock();
     exitFullscreen();
     onCancel();
@@ -216,18 +220,20 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   // 완료 시 집중 모드 해제
   useEffect(() => {
     if (phase === "done") {
+      setTimerActive(false);
       releaseWakeLock();
       exitFullscreen();
     }
-  }, [phase, releaseWakeLock, exitFullscreen]);
+  }, [phase, setTimerActive, releaseWakeLock, exitFullscreen]);
 
   // 클린업
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      setTimerActive(false);
       releaseWakeLock();
     };
-  }, [releaseWakeLock]);
+  }, [setTimerActive, releaseWakeLock]);
 
   // ===== 시간 선택 화면 =====
   if (phase === "select") {
