@@ -71,6 +71,8 @@ export const useTodoStore = create<TodoState>()(
       },
 
       deleteTodo: (id) => {
+        const todo = get().todos.find((t) => t.id === id);
+        if (!todo || !todo.isCustom) return;
         set((state) => ({
           todos: state.todos.filter((t) => t.id !== id),
           currentTodoId: state.currentTodoId === id ? null : state.currentTodoId,

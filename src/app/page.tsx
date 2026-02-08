@@ -11,6 +11,7 @@ import Timer from "@/components/home/Timer";
 import CoinDisplay from "@/components/ui/CoinDisplay";
 import EncouragementMessage from "@/components/ui/EncouragementMessage";
 import PageTransition from "@/components/ui/PageTransition";
+import AddTodoForm from "@/components/home/AddTodoForm";
 import BottomTabBar from "@/components/layout/BottomTabBar";
 
 export default function HomePage() {
@@ -130,6 +131,13 @@ export default function HomePage() {
                 <TaskCard
                   todo={currentTodo}
                   onStartTimer={handleStartTimer}
+                />
+              </div>
+              <div className="mt-3 pb-24">
+                <AddTodoForm
+                  onAdded={(todoId) => {
+                    useTodoStore.setState({ currentTodoId: todoId });
+                  }}
                 />
               </div>
             </>
