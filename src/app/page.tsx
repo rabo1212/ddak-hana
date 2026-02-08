@@ -20,6 +20,7 @@ import EncouragementMessage from "@/components/ui/EncouragementMessage";
 import AchievementToast from "@/components/ui/AchievementToast";
 import PageTransition from "@/components/ui/PageTransition";
 import AddTodoForm from "@/components/home/AddTodoForm";
+import LandingPage from "@/components/home/LandingPage";
 import NicknameSetup from "@/components/social/NicknameSetup";
 import BottomTabBar from "@/components/layout/BottomTabBar";
 
@@ -40,6 +41,8 @@ export default function HomePage() {
   const isRegistered = useUserStore((s) => s.isRegistered);
   const userId = useUserStore((s) => s.userId);
 
+  // 랜딩페이지 표시 여부
+  const [showLanding, setShowLanding] = useState(false);
   // 타이머 모드 상태
   const [timerTodo, setTimerTodo] = useState<Todo | null>(null);
   // 마일스톤 모달
@@ -66,6 +69,16 @@ export default function HomePage() {
     }
   }, [hydrated, todos.length]);
 
+  // 첫 방문자 랜딩페이지 체크
+  useEffect(() => {
+    if (hydrated) {
+      const visited = localStorage.getItem("ddak-hana-visited");
+      if (!visited) {
+        setShowLanding(true);
+      }
+    }
+  }, [hydrated]);
+
   if (!hydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream-100">
@@ -75,6 +88,18 @@ export default function HomePage() {
           <p className="mt-1 text-gray-300 text-sm">로딩 중...</p>
         </div>
       </div>
+    );
+  }
+
+  // 첫 방문자 → 랜딩페이지 표시
+  if (showLanding) {
+    return (
+      <LandingPage
+        onStart={() => {
+          localStorage.setItem("ddak-hana-visited", "true");
+          setShowLanding(false);
+        }}
+      />
     );
   }
 
