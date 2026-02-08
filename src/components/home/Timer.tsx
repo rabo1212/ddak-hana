@@ -90,21 +90,55 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
 
-  // ===== Wake Lock: 화면 꺼짐 방지 =====
+  // ===== 화면 꺼짐 방지 (Wake Lock + iOS 무음 비디오 폴백) =====
+  const iosVideoRef = useRef<HTMLVideoElement | null>(null);
+
   const requestWakeLock = useCallback(async () => {
+    // 1) 표준 Wake Lock API (Android Chrome 등)
     try {
       if ("wakeLock" in navigator) {
         wakeLockRef.current = await navigator.wakeLock.request("screen");
+        return;
       }
     } catch {
-      // Wake Lock 실패해도 타이머는 계속 동작
+      // 실패 시 폴백으로 진행
+    }
+
+    // 2) iOS 폴백: 무음 비디오 루프로 화면 유지
+    try {
+      if (iosVideoRef.current) return; // 이미 실행 중
+      const video = document.createElement("video");
+      video.setAttribute("playsinline", "");
+      video.setAttribute("muted", "");
+      video.setAttribute("loop", "");
+      video.style.position = "fixed";
+      video.style.top = "-1px";
+      video.style.left = "-1px";
+      video.style.width = "1px";
+      video.style.height = "1px";
+      video.style.opacity = "0.01";
+      // 최소 유효 mp4 (1x1 투명 비디오, 0.1초)
+      video.src = "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAu1tZGF0AAACrwYF//+r3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE1NyByMjkzNSBhZTA5YTZlIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxOCAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTMgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAHkGWIhAAz//727L4FNf2f0JcRLMXaSnA+KqSAgHc0wAAAAwAAAwAAFgn0IAAYAAEAAZ4CAAAAHMKZYA8ARMIAAAAHAAH+khkAAAADABhggQAAAAA=";
+      video.muted = true;
+      document.body.appendChild(video);
+      await video.play();
+      iosVideoRef.current = video;
+    } catch {
+      // 비디오 재생도 실패하면 포기 — 타이머 자체는 계속 동작
     }
   }, []);
 
   const releaseWakeLock = useCallback(() => {
+    // Wake Lock 해제
     if (wakeLockRef.current) {
       wakeLockRef.current.release();
       wakeLockRef.current = null;
+    }
+    // iOS 비디오 정리
+    if (iosVideoRef.current) {
+      iosVideoRef.current.pause();
+      iosVideoRef.current.remove();
+      iosVideoRef.current = null;
     }
   }, []);
 
@@ -284,7 +318,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
         </div>
 
         <p className="text-xs text-gray-300 text-center mt-4">
-          타이머 시작 시 전체화면 + 화면 꺼짐 방지 🔒
+          집중 모드: 화면 꺼짐 방지 + 이탈 감지 🔒
         </p>
 
         <button
