@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Todo } from "@/stores/useTodoStore";
 import EncouragementMessage from "@/components/ui/EncouragementMessage";
 
@@ -52,7 +52,7 @@ function getTimeOptions(estimatedMinutes: number) {
   ];
 }
 
-// 바디더블링 가재 캐릭터 상태
+// 가재 캐릭터 상태
 const buddyStates = [
   { emoji: "🦞", text: "같이 집중하는 중...", animation: "animate-float" },
   { emoji: "🦞", text: "열심히 하고 있어!", animation: "animate-bounce-slow" },
@@ -65,7 +65,11 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   const [totalSeconds, setTotalSeconds] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [buddyIndex, setBuddyIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showReturnBanner, setShowReturnBanner] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // 할일에 맞는 시간 옵션 생성
   const timeOptions = getTimeOptions(todo.estimatedMinutes);
@@ -84,14 +88,81 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
 
+  // ===== Wake Lock: 화면 꺼짐 방지 =====
+  const requestWakeLock = useCallback(async () => {
+    try {
+      if ("wakeLock" in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request("screen");
+      }
+    } catch {
+      // Wake Lock 실패해도 타이머는 계속 동작
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  // ===== 전체화면 모드 =====
+  const enterFullscreen = useCallback(async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch {
+      // 전체화면 미지원 or 거부 — 무시
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(() => {
+    try {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      setIsFullscreen(false);
+    } catch {
+      // 무시
+    }
+  }, []);
+
+  // 전체화면 상태 감지
+  useEffect(() => {
+    const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => document.removeEventListener("fullscreenchange", handleChange);
+  }, []);
+
+  // ===== 이탈 감지: Page Visibility API =====
+  useEffect(() => {
+    if (phase !== "running") return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 이탈 — 타이머 일시정지
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setPhase("paused");
+      } else {
+        // 돌아옴 — 배너 표시
+        setShowReturnBanner(true);
+        setTimeout(() => setShowReturnBanner(false), 3000);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [phase]);
+
   // 카운트다운 로직
   const tick = useCallback(() => {
     setRemainingSeconds((prev) => {
       if (prev <= 1) {
-        // 타이머 완료!
         if (intervalRef.current) clearInterval(intervalRef.current);
         setPhase("done");
-        // 진동
         if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
         return 0;
       }
@@ -99,7 +170,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
     });
   }, []);
 
-  // 바디더블링 캐릭터 상태 변경 (30초마다)
+  // 가재 캐릭터 상태 변경 (30초마다)
   useEffect(() => {
     if (phase !== "running") return;
     const buddyInterval = setInterval(() => {
@@ -109,12 +180,16 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   }, [phase]);
 
   // 시간 선택 → 시작
-  const startTimer = (mins: number) => {
+  const startTimer = async (mins: number) => {
     const secs = mins * 60;
     setTotalSeconds(secs);
     setRemainingSeconds(secs);
     setPhase("running");
     intervalRef.current = setInterval(tick, 1000);
+
+    // 집중 모드 활성화
+    await requestWakeLock();
+    await enterFullscreen();
   };
 
   // 일시정지
@@ -124,23 +199,35 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   };
 
   // 재개
-  const resumeTimer = () => {
+  const resumeTimer = async () => {
     setPhase("running");
     intervalRef.current = setInterval(tick, 1000);
+    await requestWakeLock();
   };
 
   // 포기
   const giveUp = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    releaseWakeLock();
+    exitFullscreen();
     onCancel();
   };
+
+  // 완료 시 집중 모드 해제
+  useEffect(() => {
+    if (phase === "done") {
+      releaseWakeLock();
+      exitFullscreen();
+    }
+  }, [phase, releaseWakeLock, exitFullscreen]);
 
   // 클린업
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      releaseWakeLock();
     };
-  }, []);
+  }, [releaseWakeLock]);
 
   // ===== 시간 선택 화면 =====
   if (phase === "select") {
@@ -190,9 +277,13 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
           })}
         </div>
 
+        <p className="text-xs text-gray-300 text-center mt-4">
+          타이머 시작 시 전체화면 + 화면 꺼짐 방지 🔒
+        </p>
+
         <button
           onClick={onCancel}
-          className="w-full mt-4 py-2 text-gray-400 text-sm"
+          className="w-full mt-2 py-2 text-gray-400 text-sm"
         >
           ← 돌아가기
         </button>
@@ -282,10 +373,40 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex flex-col items-center pt-2"
     >
+      {/* 돌아옴 배너 */}
+      <AnimatePresence>
+        {showReturnBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-4 right-4 z-50 bg-lavender-300 text-white text-center py-3 px-4 rounded-2xl shadow-lg max-w-sm mx-auto"
+          >
+            돌아왔네! 다시 집중해보자 💪
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 집중 모드 표시 */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] text-lavender-300 bg-lavender-50 px-2 py-0.5 rounded-full">
+          {isFullscreen ? "🔒 집중모드" : "📱 일반모드"}
+        </span>
+        {!isFullscreen && phase === "running" && (
+          <button
+            onClick={enterFullscreen}
+            className="text-[10px] text-gray-400 underline"
+          >
+            전체화면
+          </button>
+        )}
+      </div>
+
       {/* 할일 제목 */}
       <div className="text-center mb-4">
         <span className="text-3xl">{todo.emoji}</span>
@@ -295,7 +416,6 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
       {/* 원형 프로그레스 + 시간 */}
       <div className="relative w-56 h-56 mb-6">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-          {/* 배경 원 */}
           <circle
             cx="100"
             cy="100"
@@ -304,7 +424,6 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
             stroke="#EDE9FE"
             strokeWidth="8"
           />
-          {/* 프로그레스 원 */}
           <motion.circle
             cx="100"
             cy="100"
@@ -319,7 +438,6 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
           />
         </svg>
 
-        {/* 시간 표시 (원 중앙) */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <motion.span
             className="text-4xl font-bold text-gray-700 tabular-nums"
@@ -334,7 +452,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
         </div>
       </div>
 
-      {/* 바디더블링 가재 */}
+      {/* 가재 캐릭터 */}
       <motion.div
         className="flex flex-col items-center mb-6 bg-cream-200 rounded-2xl px-6 py-3"
         animate={{ y: isPaused ? 0 : [0, -4, 0] }}
@@ -376,7 +494,6 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
         </motion.button>
       </div>
 
-      {/* 포기해도 괜찮다는 메시지 */}
       <p className="text-xs text-gray-300 mt-4">
         그만둬도 괜찮아요. 시작한 것만으로 대단해! 💜
       </p>
