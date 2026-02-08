@@ -8,6 +8,7 @@ import { useTimerStore } from "@/stores/useTimerStore";
 const tabs = [
   { href: "/", label: "홈", icon: "🏠", activeIcon: "🏡" },
   { href: "/room", label: "방", icon: "🪟", activeIcon: "🏘️" },
+  { href: "/social", label: "친구", icon: "👥", activeIcon: "🤝" },
   { href: "/shop", label: "상점", icon: "🏪", activeIcon: "🛍️" },
   { href: "/settings", label: "설정", icon: "⚙️", activeIcon: "🔧" },
 ];
@@ -20,7 +21,7 @@ export default function BottomTabBar() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-t border-lavender-100">
       <div className="max-w-lg mx-auto flex justify-around items-center h-[72px] px-2 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
-          const isActive = pathname === tab.href;
+          const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
           const isLocked = isTimerActive && !isActive;
 
           if (isLocked) {

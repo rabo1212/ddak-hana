@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import SyncProvider from "@/components/SyncProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased min-h-screen max-w-lg mx-auto relative">
-        {children}
+        <SyncProvider>{children}</SyncProvider>
       </body>
     </html>
   );

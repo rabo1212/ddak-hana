@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTodoStore, type Todo } from "@/stores/useTodoStore";
 import { useCoinStore } from "@/stores/useCoinStore";
 import { useHydration } from "@/lib/useHydration";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useUserStore } from "@/stores/useUserStore";
 import { defaultTodos } from "@/data/defaultTodos";
 import ConditionSelect from "@/components/home/ConditionSelect";
 import TaskCard from "@/components/home/TaskCard";
@@ -12,6 +14,7 @@ import CoinDisplay from "@/components/ui/CoinDisplay";
 import EncouragementMessage from "@/components/ui/EncouragementMessage";
 import PageTransition from "@/components/ui/PageTransition";
 import AddTodoForm from "@/components/home/AddTodoForm";
+import NicknameSetup from "@/components/social/NicknameSetup";
 import BottomTabBar from "@/components/layout/BottomTabBar";
 
 export default function HomePage() {
@@ -25,6 +28,8 @@ export default function HomePage() {
   const getTodayCompleted = useTodoStore((s) => s.getTodayCompleted);
   const earnCoins = useCoinStore((s) => s.earnCoins);
   const addConsecutive = useCoinStore((s) => s.addConsecutive);
+  const isRegistered = useUserStore((s) => s.isRegistered);
+  const userId = useUserStore((s) => s.userId);
 
   // 타이머 모드 상태
   const [timerTodo, setTimerTodo] = useState<Todo | null>(null);
@@ -80,6 +85,15 @@ export default function HomePage() {
 
     earnCoins(coins, `할일 완료: ${timerTodo.title}`);
 
+    // Supabase에 완료 기록
+    if (isSupabaseConfigured() && userId) {
+      supabase.from("completed_tasks").insert({
+        user_id: userId,
+        title: timerTodo.title,
+        emoji: timerTodo.emoji,
+      }).then(() => {});
+    }
+
     setTimerTodo(null);
     recommendNext();
   };
@@ -89,8 +103,11 @@ export default function HomePage() {
     setTimerTodo(null);
   };
 
+  const showNicknameSetup = isSupabaseConfigured() && !isRegistered();
+
   return (
     <>
+      {showNicknameSetup && <NicknameSetup />}
       <main className="min-h-screen bg-cream-100 px-4 pt-6">
         <PageTransition>
           {/* 헤더 */}
