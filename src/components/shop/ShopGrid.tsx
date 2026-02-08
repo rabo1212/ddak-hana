@@ -6,6 +6,7 @@ import { pixelItems, shopCategories } from "@/data/pixelItems";
 import { useShopStore } from "@/stores/useShopStore";
 import { useCoinStore } from "@/stores/useCoinStore";
 import { useRoomStore } from "@/stores/useRoomStore";
+import PixelArt from "@/components/room/PixelArt";
 
 export default function ShopGrid() {
   const { purchasedItemIds, selectedCategory, purchaseItem, hasPurchased, setCategory } = useShopStore();
@@ -99,9 +100,13 @@ export default function ShopGrid() {
                   <span className="absolute top-1 right-1 text-xs">{style.badge}</span>
                 )}
 
-                <span className="text-3xl mb-1">
-                  {owned ? item.emoji : canAfford ? item.emoji : "🔒"}
-                </span>
+                <div className="mb-1 flex items-center justify-center" style={{ width: 48, height: 48 }}>
+                  {canAfford || owned ? (
+                    <PixelArt itemId={item.id} size={48} />
+                  ) : (
+                    <span className="text-3xl">🔒</span>
+                  )}
+                </div>
                 <span className="text-xs font-medium text-gray-700 truncate w-full text-center">
                   {item.name}
                 </span>

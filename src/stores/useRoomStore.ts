@@ -18,6 +18,7 @@ interface RoomState {
   placeItem: (itemId: string, x: number, y: number) => boolean;
   removeItem: (x: number, y: number) => void;
   moveItem: (fromX: number, fromY: number, toX: number, toY: number) => boolean;
+  swapItem: (fromX: number, fromY: number, toX: number, toY: number) => boolean;
   setWallColor: (color: string) => void;
   setFloorColor: (color: string) => void;
 }
@@ -106,6 +107,32 @@ export const useRoomStore = create<RoomState>()(
               ? { ...item, gridX: toX, gridY: toY }
               : item
           ),
+        }));
+        return true;
+      },
+
+      swapItem: (fromX, fromY, toX, toY) => {
+        const { grid } = get();
+        const fromItem = grid[fromY]?.[fromX];
+        const toItem = grid[toY]?.[toX];
+        if (!fromItem) return false;
+        if (toX < 0 || toX >= 8 || toY < 0 || toY >= 6) return false;
+
+        const newGrid = grid.map((row) => [...row]);
+        newGrid[fromY][fromX] = toItem;
+        newGrid[toY][toX] = fromItem;
+
+        set((state) => ({
+          grid: newGrid,
+          placedItems: state.placedItems.map((item) => {
+            if (item.gridX === fromX && item.gridY === fromY) {
+              return { ...item, gridX: toX, gridY: toY };
+            }
+            if (item.gridX === toX && item.gridY === toY) {
+              return { ...item, gridX: fromX, gridY: fromY };
+            }
+            return item;
+          }),
         }));
         return true;
       },
