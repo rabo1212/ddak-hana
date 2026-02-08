@@ -121,7 +121,7 @@ export default function TaskCard({ todo, onStartTimer }: Props) {
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => {/* 패스 - ADHD 친화: 아무 패널티 없음 */}}
+              onClick={handleSkip}
               className="flex-1 py-3 bg-cream-200 text-gray-500 rounded-xl text-sm font-medium"
             >
               오늘은 패스 😴

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import PageTransition from "@/components/ui/PageTransition";
 import CoinDisplay from "@/components/ui/CoinDisplay";
@@ -26,7 +27,7 @@ export default function SettingsPage() {
       <main className="min-h-screen bg-cream-100 px-4 pt-6">
         <PageTransition>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-lavender-500">설정 ⚙️</h1>
+            <Link href="/" className="text-2xl font-bold text-lavender-500 hover:opacity-80 transition-opacity">딱 하나 🎯</Link>
             <CoinDisplay />
           </div>
 
@@ -75,9 +76,9 @@ export default function SettingsPage() {
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-semibold text-gray-700 mb-2">앱 정보</h2>
               <p className="text-sm text-gray-400">딱 하나 v0.1.0</p>
-              <p className="text-sm text-gray-400 mt-1">ADHD 친화 할일 + 방꾸미기 앱</p>
+              <p className="text-sm text-gray-400 mt-1">할일 관리 + 픽셀 방꾸미기 앱</p>
               <p className="text-xs text-gray-300 mt-2">
-                스트릭 없음 · 패널티 없음 · 오늘 다시 시작한 게 대단해 💜
+                부담 없이 · 하나씩 · 내 페이스대로 💜
               </p>
             </div>
           </div>

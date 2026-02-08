@@ -94,7 +94,12 @@ export default function HomePage() {
         <PageTransition>
           {/* 헤더 */}
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-lavender-500">딱 하나 🎯</h1>
+            <button
+              onClick={() => setTimerTodo(null)}
+              className="text-2xl font-bold text-lavender-500 hover:opacity-80 transition-opacity"
+            >
+              딱 하나 🎯
+            </button>
             <CoinDisplay />
           </div>
 

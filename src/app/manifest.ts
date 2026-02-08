@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "딱 하나 - ADHD 친화 할일앱",
+    name: "딱 하나 - 할일 + 방꾸미기",
     short_name: "딱 하나",
-    description: "딱 하나만 하면 돼. ADHD 친화적 할일 + 픽셀 꾸미기 앱",
+    description: "딱 하나만 하면 돼. 할일 관리 + 픽셀 방꾸미기 앱",
     start_url: "/",
     display: "standalone",
     background_color: "#FFF8F0",

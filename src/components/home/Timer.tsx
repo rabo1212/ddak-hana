@@ -13,11 +13,44 @@ interface TimerProps {
   onCancel: () => void;
 }
 
-const timeOptions = [
-  { minutes: 5, emoji: "☕", label: "5분", desc: "가볍게" },
-  { minutes: 15, emoji: "🍅", label: "15분", desc: "적당히" },
-  { minutes: 25, emoji: "🔥", label: "25분", desc: "집중!" },
-];
+// 할일 예상시간에 맞게 타이머 옵션 동적 생성
+function getTimeOptions(estimatedMinutes: number) {
+  const base = estimatedMinutes;
+
+  if (base <= 3) {
+    return [
+      { minutes: base, emoji: "⚡", label: `${base}분`, desc: "딱 맞게" },
+      { minutes: 5, emoji: "☕", label: "5분", desc: "여유있게" },
+      { minutes: 10, emoji: "🍅", label: "10분", desc: "넉넉히" },
+    ];
+  }
+  if (base <= 5) {
+    return [
+      { minutes: base, emoji: "☕", label: `${base}분`, desc: "딱 맞게" },
+      { minutes: 10, emoji: "🍅", label: "10분", desc: "여유있게" },
+      { minutes: 15, emoji: "🔥", label: "15분", desc: "넉넉히" },
+    ];
+  }
+  if (base <= 10) {
+    return [
+      { minutes: base, emoji: "🍅", label: `${base}분`, desc: "딱 맞게" },
+      { minutes: 15, emoji: "🔥", label: "15분", desc: "여유있게" },
+      { minutes: 25, emoji: "💪", label: "25분", desc: "넉넉히" },
+    ];
+  }
+  if (base <= 20) {
+    return [
+      { minutes: base, emoji: "🔥", label: `${base}분`, desc: "딱 맞게" },
+      { minutes: 25, emoji: "💪", label: "25분", desc: "여유있게" },
+      { minutes: 30, emoji: "🏆", label: "30분", desc: "넉넉히" },
+    ];
+  }
+  return [
+    { minutes: base, emoji: "💪", label: `${base}분`, desc: "딱 맞게" },
+    { minutes: 30, emoji: "🔥", label: "30분", desc: "여유있게" },
+    { minutes: 45, emoji: "🏆", label: "45분", desc: "넉넉히" },
+  ];
+}
 
 // 바디더블링 가재 캐릭터 상태
 const buddyStates = [
@@ -34,9 +67,9 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
   const [buddyIndex, setBuddyIndex] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 추천 시간 계산
-  const recommendedMinutes =
-    todo.estimatedMinutes <= 5 ? 5 : todo.estimatedMinutes <= 15 ? 15 : 25;
+  // 할일에 맞는 시간 옵션 생성
+  const timeOptions = getTimeOptions(todo.estimatedMinutes);
+  const recommendedMinutes = timeOptions[0].minutes;
 
   // 타이머 진행률 (0~1)
   const progress = totalSeconds > 0 ? 1 - remainingSeconds / totalSeconds : 0;
@@ -96,7 +129,7 @@ export default function Timer({ todo, onComplete, onCancel }: TimerProps) {
     intervalRef.current = setInterval(tick, 1000);
   };
 
-  // 포기 (패널티 없음!)
+  // 포기
   const giveUp = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     onCancel();

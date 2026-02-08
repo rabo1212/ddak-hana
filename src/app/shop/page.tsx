@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import PageTransition from "@/components/ui/PageTransition";
 import CoinDisplay from "@/components/ui/CoinDisplay";
 import BottomTabBar from "@/components/layout/BottomTabBar";
@@ -16,7 +17,7 @@ export default function ShopPage() {
       <main className="min-h-screen bg-cream-100 px-4 pt-6">
         <PageTransition>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-lavender-500">상점 🏪</h1>
+            <Link href="/" className="text-2xl font-bold text-lavender-500 hover:opacity-80 transition-opacity">딱 하나 🎯</Link>
             <CoinDisplay />
           </div>
           <ShopGrid />
