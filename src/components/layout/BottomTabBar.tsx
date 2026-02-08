@@ -19,7 +19,7 @@ export default function BottomTabBar() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-t border-lavender-100">
-      <div className="max-w-lg mx-auto flex justify-around items-center h-[72px] px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-md mx-auto flex justify-around items-center h-[64px] px-2 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
           const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
           const isLocked = isTimerActive && !isActive;

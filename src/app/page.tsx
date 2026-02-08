@@ -182,10 +182,10 @@ export default function HomePage() {
           onClose={() => setMilestoneModal(null)}
         />
       )}
-      <main className="min-h-screen bg-cream-100 px-4 pt-6">
+      <main className="min-h-screen bg-cream-100 px-4 pt-4">
         <PageTransition>
           {/* 헤더 */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-4">
             <button
               onClick={() => {
                 if (timerTodo) {
@@ -227,7 +227,7 @@ export default function HomePage() {
                   onStartTimer={handleStartTimer}
                 />
               </div>
-              <div className="mt-3 pb-24">
+              <div className="mt-3 pb-20">
                 <AddTodoForm
                   onAdded={(todoId) => {
                     useTodoStore.setState({ currentTodoId: todoId });

@@ -64,33 +64,33 @@ export default function TaskCard({ todo, onStartTimer }: Props) {
         animate={{ opacity: 1, scale: 1, x: 0 }}
         exit={{ opacity: 0, scale: 0.9, x: -50 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="bg-white rounded-3xl shadow-lg p-6 mx-auto max-w-sm"
+        className="bg-white rounded-2xl shadow-lg p-5 mx-auto"
       >
         {/* 이모지 + 제목 */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <motion.div
-            className="text-6xl mb-4"
-            animate={{ y: [0, -8, 0] }}
+            className="text-5xl mb-3"
+            animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
             {todo.emoji}
           </motion.div>
-          <h2 className="text-xl font-bold text-gray-700">{todo.title}</h2>
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+          <h2 className="text-lg font-bold text-gray-700">{todo.title}</h2>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               ⏱ {todo.estimatedMinutes}분
             </span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+            <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               🪙 {todo.coinReward}
             </span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+            <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               {difficultyLabel[todo.difficulty]}
             </span>
           </div>
         </div>
 
         {/* 난이도 표시 */}
-        <div className="flex justify-center gap-1 mb-6">
+        <div className="flex justify-center gap-1 mb-4">
           {[1, 2, 3].map((level) => (
             <div
               key={level}
@@ -102,12 +102,12 @@ export default function TaskCard({ todo, onStartTimer }: Props) {
         </div>
 
         {/* 버튼 */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleStartTimer}
-            className="w-full py-4 bg-lavender-300 text-white rounded-2xl font-bold text-lg shadow-md active:shadow-sm transition-shadow"
+            className="w-full py-3.5 bg-lavender-300 text-white rounded-xl font-bold text-base shadow-md active:shadow-sm transition-shadow"
           >
             할래! 🚀
           </motion.button>
@@ -115,14 +115,14 @@ export default function TaskCard({ todo, onStartTimer }: Props) {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleSkip}
-              className="flex-1 py-3 bg-cream-200 text-gray-500 rounded-xl text-sm font-medium"
+              className="flex-1 py-2.5 bg-cream-200 text-gray-500 rounded-lg text-sm font-medium"
             >
               다른거 ♻️
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleSkip}
-              className="flex-1 py-3 bg-cream-200 text-gray-500 rounded-xl text-sm font-medium"
+              className="flex-1 py-2.5 bg-cream-200 text-gray-500 rounded-lg text-sm font-medium"
             >
               오늘은 패스 😴
             </motion.button>
