@@ -9,6 +9,10 @@ import { useHydration } from "@/lib/useHydration";
 import { useCoinStore } from "@/stores/useCoinStore";
 import { useTodoStore } from "@/stores/useTodoStore";
 import { useRoomStore } from "@/stores/useRoomStore";
+import { useStreakStore } from "@/stores/useStreakStore";
+import { useAchievementStore } from "@/stores/useAchievementStore";
+import { achievements } from "@/data/achievements";
+import NotificationSettings from "@/components/settings/NotificationSettings";
 
 export default function SettingsPage() {
   const hydrated = useHydration();
@@ -17,6 +21,9 @@ export default function SettingsPage() {
   const todos = useTodoStore((s) => s.todos);
   const placedItems = useRoomStore((s) => s.placedItems);
   const roomLevel = useRoomStore((s) => s.roomLevel);
+  const currentStreak = useStreakStore((s) => s.currentStreak);
+  const longestStreak = useStreakStore((s) => s.longestStreak);
+  const unlockedCount = useAchievementStore((s) => s.unlockedIds.length);
 
   if (!hydrated) return null;
 
@@ -35,7 +42,7 @@ export default function SettingsPage() {
             {/* 통계 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <h2 className="font-semibold text-gray-700 mb-3">나의 기록 📊</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-lavender-50 rounded-xl p-3 text-center">
                   <div className="text-2xl font-bold text-lavender-500">{completedCount}</div>
                   <div className="text-xs text-gray-400">완료한 할일</div>
@@ -52,7 +59,40 @@ export default function SettingsPage() {
                   <div className="text-2xl font-bold text-mint-400">Lv.{roomLevel}</div>
                   <div className="text-xs text-gray-400">방 레벨 ({placedItems.length}개)</div>
                 </div>
+                <div className="bg-orange-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-orange-500">{currentStreak}</div>
+                  <div className="text-xs text-gray-400">현재 연속일</div>
+                </div>
+                <div className="bg-orange-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-orange-400">{longestStreak}</div>
+                  <div className="text-xs text-gray-400">최고 연속 기록</div>
+                </div>
               </div>
+            </div>
+
+            {/* 업적 */}
+            <Link href="/achievements" className="block">
+              <motion.div
+                whileTap={{ scale: 0.98 }}
+                className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🏆</span>
+                  <div>
+                    <p className="font-semibold text-gray-700">나의 업적</p>
+                    <p className="text-xs text-gray-400">
+                      {unlockedCount}/{achievements.length}개 달성
+                    </p>
+                  </div>
+                </div>
+                <span className="text-gray-300">→</span>
+              </motion.div>
+            </Link>
+
+            {/* 알림 설정 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <h2 className="font-semibold text-gray-700 mb-3">알림 설정 ⏰</h2>
+              <NotificationSettings />
             </div>
 
             {/* 데이터 관리 */}

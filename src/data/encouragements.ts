@@ -73,6 +73,18 @@ export const encouragements = {
     "오늘은 충분히 했어. 내일 봐요 👋",
     "아무것도 안 해도 괜찮아! 💜",
   ],
+
+  onStreakContinue: [
+    "연속 기록 유지 중! 멋져 🔥",
+    "불꽃이 꺼지지 않아! 계속 가자!",
+    "매일매일 성장하고 있어!",
+  ],
+
+  onStreakBroken: [
+    "괜찮아! 오늘부터 다시 시작이야 💪",
+    "한 번 쉬었다고 끝이 아니야!",
+    "새로운 기록을 만들어보자! 🔥",
+  ],
 } as const;
 
 export type EncouragementContext = keyof typeof encouragements;
