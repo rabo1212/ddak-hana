@@ -9,30 +9,35 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAchievementStore } from "@/stores/useAchievementStore";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useUserStore } from "@/stores/useUserStore";
+import { useCharacterStore } from "@/stores/useCharacterStore";
+import { useShopStore } from "@/stores/useShopStore";
 import { defaultTodos } from "@/data/defaultTodos";
-import ConditionSelect from "@/components/home/ConditionSelect";
-import TaskCard from "@/components/home/TaskCard";
-import Timer from "@/components/home/Timer";
+import { rollItemDrop, type ItemDropResult } from "@/lib/itemDrop";
+
+import PixelRoom from "@/components/room/PixelRoom";
+import TodoMiniCard from "@/components/home/TodoMiniCard";
+import TimerOverlay from "@/components/home/TimerOverlay";
+import ConditionSheet from "@/components/home/ConditionSheet";
 import CoinDisplay from "@/components/ui/CoinDisplay";
 import StreakDisplay from "@/components/ui/StreakDisplay";
 import StreakMilestone from "@/components/ui/StreakMilestone";
-import EncouragementMessage from "@/components/ui/EncouragementMessage";
 import AchievementToast from "@/components/ui/AchievementToast";
-import PageTransition from "@/components/ui/PageTransition";
-import AddTodoForm from "@/components/home/AddTodoForm";
+import ItemDropModal from "@/components/ui/ItemDropModal";
 import LandingPage from "@/components/home/LandingPage";
 import NicknameSetup from "@/components/social/NicknameSetup";
 import BottomTabBar from "@/components/layout/BottomTabBar";
+import AddTodoForm from "@/components/home/AddTodoForm";
+import TodoListSheet from "@/components/home/TodoListSheet";
 
 export default function HomePage() {
   const hydrated = useHydration();
   const todos = useTodoStore((s) => s.todos);
   const currentTodoId = useTodoStore((s) => s.currentTodoId);
-  const todayCondition = useTodoStore((s) => s.todayCondition);
   const needsConditionCheck = useTodoStore((s) => s.needsConditionCheck);
   const completeTodo = useTodoStore((s) => s.completeTodo);
   const recommendNext = useTodoStore((s) => s.recommendNext);
   const getTodayCompleted = useTodoStore((s) => s.getTodayCompleted);
+  const resetRoutines = useTodoStore((s) => s.resetRoutines);
   const earnCoins = useCoinStore((s) => s.earnCoins);
   const addConsecutive = useCoinStore((s) => s.addConsecutive);
   const checkAndUpdateStreak = useStreakStore((s) => s.checkAndUpdateStreak);
@@ -40,44 +45,54 @@ export default function HomePage() {
   const roomLevel = useRoomStore((s) => s.roomLevel);
   const isRegistered = useUserStore((s) => s.isRegistered);
   const userId = useUserStore((s) => s.userId);
+  const addCharacterExp = useCharacterStore((s) => s.addExp);
 
-  // 랜딩페이지 표시 여부
   const [showLanding, setShowLanding] = useState(false);
-  // 타이머 모드 상태
   const [timerTodo, setTimerTodo] = useState<Todo | null>(null);
-  // 마일스톤 모달
+  const [showConditionSheet, setShowConditionSheet] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showTodoList, setShowTodoList] = useState(false);
+  const [itemDropResult, setItemDropResult] = useState<ItemDropResult | null>(null);
   const [milestoneModal, setMilestoneModal] = useState<{
-    days: number;
-    bonus: number;
-    message: string;
+    days: number; bonus: number; message: string;
   } | null>(null);
-  // 업적 토스트 큐
   const [achievementToast, setAchievementToast] = useState<
     import("@/data/achievements").Achievement | null
   >(null);
   const achievementQueueRef = useRef<import("@/data/achievements").Achievement[]>([]);
 
-  // 첫 실행 시 기본 할일 시드 (localStorage에 저장 기록 없을 때만)
+  // 기본 할일 시드
   useEffect(() => {
     if (hydrated && todos.length === 0) {
-      // localStorage에 이미 저장된 적이 있으면 시드하지 않음
       const saved = localStorage.getItem("ddak-hana-todos");
-      if (saved) return; // 이전에 저장된 적 있음 = 유저가 전부 삭제한 것
-
+      if (saved) return;
       const addTodo = useTodoStore.getState().addTodo;
       defaultTodos.forEach((todo) => addTodo(todo));
     }
   }, [hydrated, todos.length]);
 
-  // 첫 방문자 랜딩페이지 체크
+  // 첫 방문 랜딩페이지
   useEffect(() => {
     if (hydrated) {
       const visited = localStorage.getItem("ddak-hana-visited");
-      if (!visited) {
-        setShowLanding(true);
-      }
+      if (!visited) setShowLanding(true);
     }
   }, [hydrated]);
+
+  // 루틴 리셋 (매일)
+  useEffect(() => {
+    if (hydrated) {
+      resetRoutines();
+    }
+  }, [hydrated, resetRoutines]);
+
+  // 컨디션 체크 필요 시 바텀시트 표시 (닉네임 설정 중에는 안 띄움)
+  const showNicknameSetup = isSupabaseConfigured() && !isRegistered();
+  useEffect(() => {
+    if (hydrated && !showNicknameSetup && needsConditionCheck()) {
+      setShowConditionSheet(true);
+    }
+  }, [hydrated, needsConditionCheck, showNicknameSetup]);
 
   if (!hydrated) {
     return (
@@ -91,7 +106,6 @@ export default function HomePage() {
     );
   }
 
-  // 첫 방문자 → 랜딩페이지 표시
   if (showLanding) {
     return (
       <LandingPage
@@ -103,45 +117,58 @@ export default function HomePage() {
     );
   }
 
-  const showConditionSelect = needsConditionCheck();
   const currentTodo = todos.find((t) => t.id === currentTodoId) || null;
 
-  // "할래!" 클릭 → 타이머 모드 진입
+  // 할래! → 타이머
   const handleStartTimer = (todo: Todo) => {
     setTimerTodo(todo);
   };
 
-  // 타이머 완료 → 코인 획득 + 할일 완료 처리
+  // 타이머 완료
   const handleTimerComplete = () => {
     if (!timerTodo) return;
 
     completeTodo(timerTodo.id);
 
-    // 코인 계산
     let coins = timerTodo.coinReward;
     const consecutive = addConsecutive();
     const todayDone = getTodayCompleted();
 
-    // 첫 시작 보너스
-    if (todayDone.length === 0) {
-      coins += 10;
-    }
-
-    // 3개 연속 보너스
-    if (consecutive > 0 && consecutive % 3 === 0) {
-      coins += 5;
-    }
+    if (todayDone.length === 0) coins += 10;
+    if (consecutive > 0 && consecutive % 3 === 0) coins += 5;
 
     earnCoins(coins, `할일 완료: ${timerTodo.title}`);
 
-    // 스트릭 체크
+    // 스트릭
     const streakResult = checkAndUpdateStreak();
     if (streakResult.milestone) {
       earnCoins(streakResult.milestone.bonus, `🔥 ${streakResult.milestone.days}일 연속 보너스`);
       setMilestoneModal(streakResult.milestone);
     }
 
-    // 업적 체크
+    // 아이템 드랍
+    const isStreakBonus = consecutive > 0 && consecutive % 3 === 0;
+    const ownedItemIds = useShopStore.getState().purchasedItemIds;
+    const dropResult = rollItemDrop({ isStreakBonus, ownedItemIds });
+
+    if (dropResult.type === "item" && dropResult.item) {
+      useShopStore.getState().purchaseItem(dropResult.item.id);
+      const { grid } = useRoomStore.getState();
+      let placed = false;
+      for (let y = 0; y < 6 && !placed; y++) {
+        for (let x = 0; x < 8 && !placed; x++) {
+          if (grid[y][x] === null) {
+            useRoomStore.getState().placeItem(dropResult.item.id, x, y);
+            placed = true;
+          }
+        }
+      }
+    } else if (dropResult.type === "coins" && dropResult.coinAmount) {
+      earnCoins(dropResult.coinAmount, `아이템 대신 코인 보너스`);
+    }
+    setItemDropResult(dropResult);
+
+    // 업적
     const completedCount = todos.filter((t) => t.completedAt).length + 1;
     const hasCustom = todos.some((t) => t.isCustom);
     const coinBalance = useCoinStore.getState().balance;
@@ -150,24 +177,23 @@ export default function HomePage() {
       currentStreak: streakResult.streak,
       totalCoins: coinBalance,
       roomLevel,
-      friendCount: 0, // TODO: 실시간 조회 시 업데이트
+      friendCount: 0,
       hasCustomTodo: hasCustom,
       currentHour: new Date().getHours(),
     });
 
     if (newAchievements.length > 0) {
-      // 업적 보상 코인 지급
       newAchievements.forEach((a) => {
         earnCoins(a.reward, `🏆 업적: ${a.title}`);
       });
-      // 토스트 큐에 추가
       achievementQueueRef.current = [...achievementQueueRef.current, ...newAchievements];
       if (!achievementToast) {
         setAchievementToast(newAchievements[0]);
       }
     }
 
-    // Supabase에 완료 기록
+    addCharacterExp(10);
+
     if (isSupabaseConfigured() && userId) {
       supabase.from("completed_tasks").insert({
         user_id: userId,
@@ -180,11 +206,6 @@ export default function HomePage() {
     recommendNext();
   };
 
-  // 타이머 취소 → 카드로 복귀
-  const handleTimerCancel = () => {
-    setTimerTodo(null);
-  };
-
   const handleAchievementClose = () => {
     setAchievementToast(null);
     achievementQueueRef.current = achievementQueueRef.current.slice(1);
@@ -193,15 +214,12 @@ export default function HomePage() {
     }
   };
 
-  const showNicknameSetup = isSupabaseConfigured() && !isRegistered();
-
   return (
     <>
+      {/* 모달 레이어 */}
+      <ItemDropModal result={itemDropResult} onClose={() => setItemDropResult(null)} />
       {showNicknameSetup && <NicknameSetup />}
-      <AchievementToast
-        achievement={achievementToast}
-        onClose={handleAchievementClose}
-      />
+      <AchievementToast achievement={achievementToast} onClose={handleAchievementClose} />
       {milestoneModal && (
         <StreakMilestone
           show={true}
@@ -211,62 +229,98 @@ export default function HomePage() {
           onClose={() => setMilestoneModal(null)}
         />
       )}
-      <main className="min-h-screen bg-cream-100 px-4 pt-4">
-        <PageTransition>
-          {/* 헤더 */}
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => {
-                if (timerTodo) {
-                  if (confirm("타이머를 중단하고 돌아갈까요?")) {
-                    setTimerTodo(null);
-                  }
-                } else {
-                  setTimerTodo(null);
-                }
-              }}
-              className="text-2xl font-bold text-lavender-500 hover:opacity-80 transition-opacity"
-            >
+
+      {/* 메인: 3D 방 전체화면 */}
+      <div className="fixed inset-0 bg-cream-100">
+        {/* Spline 3D 방 배경 */}
+        <PixelRoom fullScreen hideSpeech />
+
+        {/* 상단 오버레이: 코인 + 스트릭 */}
+        <div className="absolute top-0 left-0 right-0 z-20 px-4 pt-4">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-white/90 drop-shadow-md">
               딱 하나 🎯
-            </button>
+            </span>
             <div className="flex items-center gap-2">
               <StreakDisplay />
               <CoinDisplay />
             </div>
           </div>
+        </div>
 
-          {/* 3단계 분기: 컨디션선택 / 타이머 / 태스크카드 */}
-          {showConditionSelect ? (
-            <ConditionSelect />
-          ) : timerTodo ? (
-            <Timer
-              todo={timerTodo}
-              onComplete={handleTimerComplete}
-              onCancel={handleTimerCancel}
+        {/* 캐릭터 옆 미니카드 (오버레이 열려있으면 숨김) */}
+        {!showConditionSheet && !showAddForm && !showTodoList && (
+          <div className="absolute z-20" style={{ bottom: "22%", right: "8%" }}>
+            <TodoMiniCard
+              todo={currentTodo}
+              onStart={handleStartTimer}
+              onAdd={() => setShowAddForm(true)}
+              onOpenList={() => setShowTodoList(true)}
             />
-          ) : (
-            <>
-              <EncouragementMessage
-                context="onConditionSelect"
-                subContext={todayCondition || "okay"}
+          </div>
+        )}
+
+      </div>
+
+      {/* 할일 추가 모달 */}
+      {showAddForm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[60]"
+            onClick={() => setShowAddForm(false)}
+          />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+            <div className="bg-white rounded-3xl px-4 pt-4 pb-4 max-w-sm w-full shadow-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-gray-700">새 할일 추가</h2>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="text-gray-300 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <AddTodoForm
+                onAdded={(todoId) => {
+                  useTodoStore.setState({ currentTodoId: todoId });
+                  setShowAddForm(false);
+                }}
               />
-              <div className="mt-4">
-                <TaskCard
-                  todo={currentTodo}
-                  onStartTimer={handleStartTimer}
-                />
-              </div>
-              <div className="mt-3 pb-20">
-                <AddTodoForm
-                  onAdded={(todoId) => {
-                    useTodoStore.setState({ currentTodoId: todoId });
-                  }}
-                />
-              </div>
-            </>
-          )}
-        </PageTransition>
-      </main>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 할일 목록 바텀시트 */}
+      {showTodoList && (
+        <TodoListSheet
+          onClose={() => setShowTodoList(false)}
+          onStartTimer={(todo) => {
+            setShowTodoList(false);
+            handleStartTimer(todo);
+          }}
+          onAddTodo={() => {
+            setShowTodoList(false);
+            setShowAddForm(true);
+          }}
+        />
+      )}
+
+      {/* 컨디션 바텀시트 */}
+      <ConditionSheet
+        show={showConditionSheet}
+        onDone={() => setShowConditionSheet(false)}
+      />
+
+      {/* 타이머 오버레이 */}
+      {timerTodo && (
+        <TimerOverlay
+          todo={timerTodo}
+          onComplete={handleTimerComplete}
+          onCancel={() => setTimerTodo(null)}
+        />
+      )}
+
       <BottomTabBar />
     </>
   );

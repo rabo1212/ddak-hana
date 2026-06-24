@@ -27,6 +27,31 @@ function createEmptyGrid(): (string | null)[][] {
   return Array.from({ length: 6 }, () => Array(8).fill(null));
 }
 
+// 신규 유저 기본 가구 세트
+const DEFAULT_FURNITURE = [
+  { itemId: "iso_bedSingle", gridX: 1, gridY: 1 },
+  { itemId: "iso_desk", gridX: 5, gridY: 1 },
+  { itemId: "iso_pottedPlant", gridX: 7, gridY: 3 },
+  { itemId: "iso_rugRound", gridX: 3, gridY: 4 },
+];
+
+function createDefaultGrid(): (string | null)[][] {
+  const grid = createEmptyGrid();
+  DEFAULT_FURNITURE.forEach(({ itemId, gridX, gridY }) => {
+    grid[gridY][gridX] = itemId;
+  });
+  return grid;
+}
+
+function createDefaultPlacedItems(): PlacedItem[] {
+  return DEFAULT_FURNITURE.map(({ itemId, gridX, gridY }) => ({
+    itemId,
+    gridX,
+    gridY,
+    placedAt: new Date().toISOString(),
+  }));
+}
+
 function calcRoomLevel(itemCount: number): number {
   if (itemCount >= 20) return 6;
   if (itemCount >= 15) return 5;
@@ -39,9 +64,9 @@ function calcRoomLevel(itemCount: number): number {
 export const useRoomStore = create<RoomState>()(
   persist(
     (set, get) => ({
-      grid: createEmptyGrid(),
-      placedItems: [],
-      roomLevel: 1,
+      grid: createDefaultGrid(),
+      placedItems: createDefaultPlacedItems(),
+      roomLevel: calcRoomLevel(DEFAULT_FURNITURE.length),
       wallColor: "#FFF8F0",
       floorColor: "#F5F0E8",
 

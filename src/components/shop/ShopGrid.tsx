@@ -6,7 +6,8 @@ import { pixelItems, shopCategories } from "@/data/pixelItems";
 import { useShopStore } from "@/stores/useShopStore";
 import { useCoinStore } from "@/stores/useCoinStore";
 import { useRoomStore } from "@/stores/useRoomStore";
-import PixelArt from "@/components/room/PixelArt";
+import FurnitureImage from "@/components/room/FurnitureImage";
+import { useAdminStore } from "@/stores/useAdminStore";
 
 export default function ShopGrid() {
   const { purchasedItemIds, selectedCategory, purchaseItem, hasPurchased, setCategory } = useShopStore();
@@ -15,6 +16,7 @@ export default function ShopGrid() {
   const grid = useRoomStore((s) => s.grid);
   const placeItem = useRoomStore((s) => s.placeItem);
 
+  const isAdmin = useAdminStore((s) => s.isAdmin);
   const [justBought, setJustBought] = useState<string | null>(null);
 
   const filteredItems =
@@ -24,8 +26,11 @@ export default function ShopGrid() {
 
   const handlePurchase = (item: typeof pixelItems[0]) => {
     if (hasPurchased(item.id)) return;
-    if (!spendCoins(item.price, `아이템 구매: ${item.name}`)) {
+    if (!isAdmin && !spendCoins(item.price, `아이템 구매: ${item.name}`)) {
       return;
+    }
+    if (isAdmin) {
+      // 관리자는 무료 구매, 코인 차감 안 함
     }
     purchaseItem(item.id);
     setJustBought(item.id);
@@ -90,9 +95,9 @@ export default function ShopGrid() {
                 whileHover={{ scale: owned ? 1 : 1.03 }}
                 whileTap={{ scale: owned ? 1 : 0.97 }}
                 onClick={() => handlePurchase(item)}
-                disabled={owned || !canAfford}
+                disabled={owned || (!isAdmin && !canAfford)}
                 className={`flex flex-col items-center p-3 rounded-2xl border-2 ${style.border} ${style.bg} ${
-                  owned ? "opacity-60" : !canAfford ? "opacity-40" : ""
+                  owned ? "opacity-60" : !isAdmin && !canAfford ? "opacity-40" : ""
                 } transition-all relative`}
               >
                 {/* 레어도 배지 */}
@@ -100,9 +105,9 @@ export default function ShopGrid() {
                   <span className="absolute top-1 right-1 text-xs">{style.badge}</span>
                 )}
 
-                <div className="mb-1 flex items-center justify-center" style={{ width: 48, height: 48 }}>
-                  {canAfford || owned ? (
-                    <PixelArt itemId={item.id} size={48} />
+                <div className="mb-1 flex items-center justify-center relative overflow-hidden rounded-lg" style={{ width: 56, height: 56 }}>
+                  {isAdmin || canAfford || owned ? (
+                    <FurnitureImage itemId={item.id} size={52} />
                   ) : (
                     <span className="text-3xl">🔒</span>
                   )}
@@ -119,7 +124,7 @@ export default function ShopGrid() {
                       : "text-gray-300"
                   }`}
                 >
-                  {owned ? "✅ 보유" : `🪙 ${item.price}`}
+                  {owned ? "✅ 보유" : isAdmin ? "🔧 무료" : `🪙 ${item.price}`}
                 </span>
               </motion.button>
             );

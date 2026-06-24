@@ -6,6 +6,8 @@ export type ConditionLevel = "great" | "okay" | "tired" | "struggling";
 
 export type TodoCategory = "self-care" | "chore" | "work" | "social" | "health" | "fun";
 
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 일=0, 월=1, ..., 토=6
+
 export interface Todo {
   id: string;
   title: string;
@@ -17,6 +19,8 @@ export interface Todo {
   completedAt: string | null;
   createdAt: string;
   isCustom: boolean;
+  isRoutine: boolean;
+  routineDays: DayOfWeek[] | null; // null = 매일, [1,3,5] = 월수금
 }
 
 interface TodoState {
@@ -25,6 +29,7 @@ interface TodoState {
   todayCondition: ConditionLevel | null;
   conditionSetDate: string | null;
   completedToday: string[];
+  lastRoutineResetDate: string | null;
 
   setCondition: (level: ConditionLevel) => void;
   addTodo: (todo: Omit<Todo, "id" | "completedAt" | "createdAt">) => void;
@@ -33,6 +38,8 @@ interface TodoState {
   recommendNext: () => void;
   needsConditionCheck: () => boolean;
   getTodayCompleted: () => Todo[];
+  resetRoutines: () => void;
+  getTodayTodos: () => Todo[];
 }
 
 export const useTodoStore = create<TodoState>()(
@@ -43,6 +50,7 @@ export const useTodoStore = create<TodoState>()(
       todayCondition: null,
       conditionSetDate: null,
       completedToday: [],
+      lastRoutineResetDate: null,
 
       setCondition: (level) => {
         const today = getToday();
@@ -56,6 +64,8 @@ export const useTodoStore = create<TodoState>()(
           id: `todo_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           completedAt: null,
           createdAt: new Date().toISOString(),
+          isRoutine: todoData.isRoutine ?? false,
+          routineDays: todoData.routineDays ?? null,
         };
         set((state) => ({ todos: [...state.todos, newTodo] }));
       },
@@ -80,8 +90,9 @@ export const useTodoStore = create<TodoState>()(
       },
 
       recommendNext: () => {
-        const { todos, todayCondition, completedToday } = get();
-        const available = todos.filter(
+        const { todayCondition, completedToday } = get();
+        const todayTodos = get().getTodayTodos();
+        const available = todayTodos.filter(
           (t) => !t.completedAt && !completedToday.includes(t.id)
         );
 
@@ -115,7 +126,52 @@ export const useTodoStore = create<TodoState>()(
           (t) => t.completedAt && t.completedAt.startsWith(today)
         );
       },
+
+      resetRoutines: () => {
+        const today = getToday();
+        const { lastRoutineResetDate } = get();
+        if (lastRoutineResetDate === today) return;
+
+        set((state) => ({
+          lastRoutineResetDate: today,
+          todos: state.todos.map((t) => {
+            if (!t.isRoutine) return t;
+            return { ...t, completedAt: null };
+          }),
+          completedToday: [],
+        }));
+      },
+
+      getTodayTodos: () => {
+        const { todos } = get();
+        const todayDow = new Date().getDay() as DayOfWeek;
+
+        return todos.filter((t) => {
+          if (!t.isRoutine) return true;
+          if (t.routineDays === null) return true;
+          return t.routineDays.includes(todayDow);
+        });
+      },
     }),
-    { name: "ddak-hana-todos" }
+    {
+      name: "ddak-hana-todos",
+      version: 1,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
+        if (version === 0 || !version) {
+          const todos = (state.todos as Todo[]) || [];
+          return {
+            ...state,
+            lastRoutineResetDate: null,
+            todos: todos.map((t) => ({
+              ...t,
+              isRoutine: t.isRoutine ?? false,
+              routineDays: t.routineDays ?? null,
+            })),
+          };
+        }
+        return persistedState;
+      },
+    }
   )
 );

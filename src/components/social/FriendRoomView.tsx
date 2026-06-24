@@ -1,7 +1,7 @@
 "use client";
 
 import { pixelItems } from "@/data/pixelItems";
-import PixelArt from "@/components/room/PixelArt";
+import FurnitureImage from "@/components/room/FurnitureImage";
 import type { PlacedItem } from "@/stores/useRoomStore";
 
 const CELL_SIZE = 44;
@@ -48,7 +48,7 @@ export default function FriendRoomView({
       >
         {item && (
           <div className="z-10">
-            <PixelArt itemId={cell!} size={CELL_SIZE - 8} />
+            <FurnitureImage itemId={cell!} size={CELL_SIZE - 4} />
           </div>
         )}
       </div>

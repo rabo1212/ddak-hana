@@ -10,6 +10,13 @@ const withPWA = withPWAInit({
 });
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  transpilePackages: ["@splinetool/react-spline", "@splinetool/runtime"],
+  webpack: (config) => {
+    // ESM-only 패키지의 exports 필드 해결
+    config.resolve.conditionNames = ["import", "module", "require", "default"];
+    return config;
+  },
+};
 
 export default withPWA(nextConfig);

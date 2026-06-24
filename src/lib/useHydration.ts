@@ -29,8 +29,14 @@ export function useHydration() {
     // 이미 hydration 끝났을 수 있으니 바로 체크
     check();
 
+    // 3초 타임아웃: hydration이 안 끝나면 강제 진행
+    const timeout = setTimeout(() => {
+      setHydrated(true);
+    }, 3000);
+
     return () => {
       unsubs.forEach((unsub) => unsub());
+      clearTimeout(timeout);
     };
   }, []);
 

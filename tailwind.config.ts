@@ -48,6 +48,8 @@ const config: Config = {
         "bounce-slow": "bounce 2s infinite",
         float: "float 3s ease-in-out infinite",
         "coin-spin": "coinSpin 0.6s ease-out",
+        "char-happy": "charHappy 1.2s ease-in-out infinite",
+        "char-sleepy": "charSleepy 4s ease-in-out infinite",
       },
       keyframes: {
         float: {
@@ -58,6 +60,14 @@ const config: Config = {
           "0%": { transform: "rotateY(0deg) scale(1)" },
           "50%": { transform: "rotateY(180deg) scale(1.2)" },
           "100%": { transform: "rotateY(360deg) scale(1)" },
+        },
+        charHappy: {
+          "0%, 100%": { transform: "translateY(0) scale(1)" },
+          "50%": { transform: "translateY(-8px) scale(1.05)" },
+        },
+        charSleepy: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "50%": { transform: "rotate(5deg) translateY(2px)" },
         },
       },
     },

@@ -7,10 +7,9 @@ import { useTimerStore } from "@/stores/useTimerStore";
 
 const tabs = [
   { href: "/", label: "홈", icon: "🏠", activeIcon: "🏡" },
-  { href: "/room", label: "방", icon: "🪟", activeIcon: "🏘️" },
-  { href: "/social", label: "친구", icon: "👥", activeIcon: "🤝" },
   { href: "/shop", label: "상점", icon: "🏪", activeIcon: "🛍️" },
-  { href: "/settings", label: "설정", icon: "⚙️", activeIcon: "🔧" },
+  { href: "/social", label: "친구", icon: "👥", activeIcon: "🤝" },
+  { href: "/profile", label: "프로필", icon: "⚙️", activeIcon: "🔧" },
 ];
 
 export default function BottomTabBar() {

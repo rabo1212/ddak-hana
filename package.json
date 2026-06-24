@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@splinetool/react-spline": "^4.1.0",
     "@supabase/supabase-js": "^2.95.3",
+    "@xyflow/react": "^12.10.0",
     "framer-motion": "^12.33.0",
     "next": "14.2.35",
     "react": "^18",

@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import CharacterSelect from "@/components/character/CharacterSelect";
 
 interface Props {
   onStart: () => void;
@@ -42,6 +43,32 @@ const steps = [
 
 export default function LandingPage({ onStart }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState<"intro" | "character">("intro");
+
+  // 캐릭터 선택 완료 → 앱 시작
+  const handleCharacterSelected = () => {
+    onStart();
+  };
+
+  // 캐릭터 선택 화면
+  if (step === "character") {
+    return (
+      <div className="min-h-screen bg-cream-100 flex flex-col items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-xl font-bold text-gray-800 text-center mb-2">
+            함께할 친구를 골라줘!
+          </h2>
+          <p className="text-sm text-gray-400 text-center mb-6">
+            매일 너를 응원해줄 거야
+          </p>
+        </motion.div>
+        <CharacterSelect onSelect={handleCharacterSelected} showConfirm />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream-100 overflow-y-auto">
@@ -82,7 +109,7 @@ export default function LandingPage({ onStart }: Props) {
           transition={{ delay: 0.9 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onStart}
+          onClick={() => setStep("character")}
           className="mt-8 px-10 py-4 bg-lavender-400 text-white rounded-2xl font-bold text-lg shadow-lg shadow-lavender-200/50"
         >
           시작하기

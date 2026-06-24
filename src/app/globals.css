@@ -49,3 +49,28 @@ body {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
+
+/* React Flow 스킬트리 커스텀 */
+.react-flow__attribution {
+  display: none !important;
+}
+
+.react-flow__edge-path {
+  filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.6));
+}
+
+/* Spline 워터마크 숨기기 */
+canvas + div,
+canvas ~ a,
+[data-logo],
+a[href*="spline.design"],
+div[style*="position: absolute"] > a[href*="spline"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

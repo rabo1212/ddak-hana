@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTodoStore, type TodoCategory } from "@/stores/useTodoStore";
+import { useTodoStore, type TodoCategory, type DayOfWeek } from "@/stores/useTodoStore";
 
 const categories: { value: TodoCategory; label: string; emoji: string }[] = [
   { value: "self-care", label: "셀프케어", emoji: "🧴" },
@@ -50,6 +50,8 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
   const [difficulty, setDifficulty] = useState<1 | 2 | 3>(2);
   const [estimatedMinutes, setEstimatedMinutes] = useState(5);
   const [selectedEmoji, setSelectedEmoji] = useState("");
+  const [routineType, setRoutineType] = useState<"none" | "daily" | "weekly">("none");
+  const [routineDays, setRoutineDays] = useState<DayOfWeek[]>([]);
 
   const coinReward = difficulty === 1 ? 5 : difficulty === 2 ? 10 : 20;
   const emoji = selectedEmoji || categories.find((c) => c.value === category)?.emoji || "📝";
@@ -66,6 +68,8 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
       coinReward,
       estimatedMinutes,
       isCustom: true,
+      isRoutine: routineType !== "none",
+      routineDays: routineType === "weekly" ? routineDays : null,
     });
 
     // 방금 추가된 todo의 id 찾기
@@ -82,6 +86,8 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
     setDifficulty(2);
     setEstimatedMinutes(5);
     setSelectedEmoji("");
+    setRoutineType("none");
+    setRoutineDays([]);
   };
 
   return (
@@ -226,6 +232,70 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
                     </motion.button>
                   ))}
                 </div>
+              </div>
+
+              {/* 반복 설정 */}
+              <div>
+                <p className="text-xs text-gray-400 mb-2">반복 설정</p>
+                <div className="flex gap-1.5">
+                  {([
+                    { value: "none" as const, label: "안 함" },
+                    { value: "daily" as const, label: "매일" },
+                    { value: "weekly" as const, label: "요일 선택" },
+                  ]).map((opt) => (
+                    <motion.button
+                      key={opt.value}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setRoutineType(opt.value)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        routineType === opt.value
+                          ? "bg-mint-100 text-mint-500 ring-1 ring-mint-300"
+                          : "bg-gray-50 text-gray-400"
+                      }`}
+                    >
+                      {opt.value !== "none" && "🔄 "}{opt.label}
+                    </motion.button>
+                  ))}
+                </div>
+
+                {/* 요일 선택 */}
+                <AnimatePresence>
+                  {routineType === "weekly" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex gap-1 mt-2">
+                        {(["일", "월", "화", "수", "목", "금", "토"] as const).map((dayLabel, i) => {
+                          const day = i as DayOfWeek;
+                          const selected = routineDays.includes(day);
+                          return (
+                            <motion.button
+                              key={day}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() =>
+                                setRoutineDays(
+                                  selected
+                                    ? routineDays.filter((d) => d !== day)
+                                    : [...routineDays, day]
+                                )
+                              }
+                              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+                                selected
+                                  ? "bg-mint-200 text-mint-600 ring-1 ring-mint-300"
+                                  : "bg-gray-50 text-gray-400"
+                              }`}
+                            >
+                              {dayLabel}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>

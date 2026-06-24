@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useTodoStore, type ConditionLevel } from "@/stores/useTodoStore";
+import { useCharacterStore, type CharacterMood } from "@/stores/useCharacterStore";
 
 const conditions: { level: ConditionLevel; emoji: string; label: string; color: string }[] = [
   { level: "great", emoji: "😊", label: "좋아!", color: "bg-mint-100 border-mint-300" },
@@ -23,8 +24,21 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+const conditionToMood: Record<ConditionLevel, CharacterMood> = {
+  great: "happy",
+  okay: "normal",
+  tired: "tired",
+  struggling: "sleepy",
+};
+
 export default function ConditionSelect() {
   const setCondition = useTodoStore((s) => s.setCondition);
+  const setCharacterMood = useCharacterStore((s) => s.setMood);
+
+  const handleSelect = (level: ConditionLevel) => {
+    setCondition(level);
+    setCharacterMood(conditionToMood[level]);
+  };
 
   return (
     <div className="flex flex-col items-center pt-12">
@@ -54,7 +68,7 @@ export default function ConditionSelect() {
             variants={item}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setCondition(cond.level)}
+            onClick={() => handleSelect(cond.level)}
             className={`flex flex-col items-center py-5 rounded-2xl border-2 ${cond.color} transition-all`}
           >
             <span className="text-4xl mb-2">{cond.emoji}</span>
